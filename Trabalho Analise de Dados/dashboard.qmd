@@ -1,0 +1,892 @@
+---
+title: "Dados sobre o feminicídio em MINAS GERAIS"
+format:
+  dashboard:
+    theme: 
+      light: lux
+      dark: darkly
+    self-contained: true
+    embed-resources: true
+---
+
+```{r}
+#| label: setup
+#| echo: false
+library(tidyverse)   # leitura, limpeza e gráficos (ggplot2 incluso)
+library(lubridate)   # manipulação de datas
+library(scales)      # formatação de eixos nos gráficos
+
+df <- read_csv2("feminicidio_2018.csv",
+               locale = locale(encoding = "UTF-8"),
+               name_repair = "universal") |>  # remove BOM e caracteres especiais dos nomes
+  
+  # renomear pelo índice (posição) para evitar erro com BOM mark na col 1
+  rename(
+    cod_municipio = 1,
+    municipio     = 2,   # municipio_fato
+    data          = 3,   # data_fato
+    mes           = 4,
+    ano           = 5,
+    risp          = 6,
+    rmbh          = 7,
+    tipo          = 8,   # tentado_consumado
+    vitimas       = 9    # qtde_vitimas
+  ) |>
+  
+  # garantir tipo correto para data
+  mutate(
+    data      = as_date(data),
+    mes_label = factor(mes, levels = 1:12,
+                       labels = c("Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                                  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro")),    municipio = str_to_title(municipio),   # "UBERABA" → "Uberaba"
+    risp      = str_trim(risp)
+  )
+# 4A ── Vítimas por mês
+por_mes <- df |>
+  group_by(mes, mes_label) |>
+  summarise(total_vitimas = sum(vitimas), ocorrencias = n(), .groups = "drop") |>
+  arrange(mes)
+
+# 4B ── Vítimas por região (RISP)
+por_risp <- df |>
+  group_by(risp) |>
+  summarise(total_vitimas = sum(vitimas), ocorrencias = n(), .groups = "drop") |>
+  arrange(desc(total_vitimas))
+
+# 4C ── Tentado vs Consumado por mês
+por_tipo_mes <- df |>
+  group_by(mes, mes_label, tipo) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop")
+
+# 4D ── Top 10 municípios
+top_municipios <- df |>
+  group_by(municipio) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop") |>
+  slice_max(total_vitimas, n = 10)
+
+# 4E ── Por área (BH / RMBH / Interior)
+por_area <- df |>
+  group_by(rmbh) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop")
+
+# Tema base
+tema <- theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+# ============================================================
+# ANÁLISE DE DADOS: FEMINICÍDIO EM MINAS GERAIS - 2019
+# ============================================================
+
+# ── 2. LEITURA E LIMPEZA ────────────────────────────────────
+df2 <- read_csv2("feminicidio_2019.csv",
+                 locale = locale(encoding = "UTF-8"),
+                 name_repair = "universal") |>  # remove BOM e caracteres especiais dos nomes
+  
+  # renomear pelo índice (posição) para evitar erro com BOM mark na col 1
+  rename(
+    cod_municipio = 1,
+    municipio     = 2,   # municipio_fato
+    data          = 3,   # data_fato
+    mes           = 4,
+    ano           = 5,
+    risp          = 6,
+    rmbh          = 7,
+    tipo          = 8,   # tentado_consumado
+    vitimas       = 9    # qtde_vitimas
+  ) |>
+  
+  # garantir tipo correto para data
+  mutate(
+    data      = as_date(data),
+    mes_label = factor(mes, levels = 1:12,
+                       labels = c("Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                                  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro")),    municipio = str_to_title(municipio),   # "UBERABA" → "Uberaba"
+    risp      = str_trim(risp)
+  )
+
+# ══════════════════════════════════════════════════════════════
+# ── 4. TABELAS-RESUMO (bases para gráficos) ──────────────────
+# ══════════════════════════════════════════════════════════════
+
+# 4A ── Vítimas por mês
+por_mes1 <- df2 |>
+  group_by(mes, mes_label) |>
+  summarise(total_vitimas = sum(vitimas), ocorrencias = n(), .groups = "drop") |>
+  arrange(mes)
+
+# 4B ── Vítimas por região (RISP)
+por_risp1 <- df2 |>
+  group_by(risp) |>
+  summarise(total_vitimas = sum(vitimas), ocorrencias = n(), .groups = "drop") |>
+  arrange(desc(total_vitimas))
+
+# 4C ── Tentado vs Consumado por mês
+por_tipo_mes1 <- df2 |>
+  group_by(mes, mes_label, tipo) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop")
+
+# 4D ── Top 10 municípios
+top_municipios1 <- df2 |>
+  group_by(municipio) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop") |>
+  slice_max(total_vitimas, n = 10)
+
+# 4E ── Por área (BH / RMBH / Interior)
+por_area1 <- df2 |>
+  group_by(rmbh) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop")
+
+# ============================================================
+# ANÁLISE DE DADOS: FEMINICÍDIO EM MINAS GERAIS - 2020
+# ============================================================
+# ── 2. LEITURA E LIMPEZA ────────────────────────────────────
+df1 <- read_csv2("feminicidio_2020.csv",
+                 locale = locale(encoding = "UTF-8"),
+                 name_repair = "universal") |>  # remove BOM e caracteres especiais dos nomes
+  
+  # renomear pelo índice (posição) para evitar erro com BOM mark na col 1
+  rename(
+    cod_municipio = 1,
+    municipio     = 2,   # municipio_fato
+    data          = 3,   # data_fato
+    mes           = 4,
+    ano           = 5,
+    risp          = 6,
+    rmbh          = 7,
+    tipo          = 8,   # tentado_consumado
+    vitimas       = 9    # qtde_vitimas
+  ) |>
+  
+  # garantir tipo correto para data
+  mutate(
+    data      = as_date(data),
+    mes_label = factor(mes, levels = 1:12,
+                       labels = c("Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                                  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro")),    municipio = str_to_title(municipio),   # "UBERABA" → "Uberaba"
+    risp      = str_trim(risp)
+  )
+
+# ══════════════════════════════════════════════════════════════
+# ── 4. TABELAS-RESUMO (bases para gráficos) ──────────────────
+# ══════════════════════════════════════════════════════════════
+
+# 4A ── Vítimas por mês
+por_mes2 <- df1 |>
+  group_by(mes, mes_label) |>
+  summarise(total_vitimas = sum(vitimas), ocorrencias = n(), .groups = "drop") |>
+  arrange(mes)
+
+# 4B ── Vítimas por região (RISP)
+por_risp2 <- df1 |>
+  group_by(risp) |>
+  summarise(total_vitimas = sum(vitimas), ocorrencias = n(), .groups = "drop") |>
+  arrange(desc(total_vitimas))
+
+# 4C ── Tentado vs Consumado por mês
+por_tipo_mes2 <- df1 |>
+  group_by(mes, mes_label, tipo) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop")
+
+# 4D ── Top 10 municípios
+top_municipios2 <- df1 |>
+  group_by(municipio) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop") |>
+  slice_max(total_vitimas, n = 10)
+
+# 4E ── Por área (BH / RMBH / Interior)
+por_area2 <- df1 |>
+  group_by(rmbh) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop")
+
+# ============================================================
+# ANÁLISE DE DADOS: FEMINICÍDIO EM MINAS GERAIS - 2021
+# ============================================================
+
+# ── 2. LEITURA E LIMPEZA ────────────────────────────────────
+df3 <- read_csv2("feminicidio_2021.csv",
+                 locale = locale(encoding = "UTF-8"),
+                 name_repair = "universal") |>  # remove BOM e caracteres especiais dos nomes
+  
+  # renomear pelo índice (posição) para evitar erro com BOM mark na col 1
+  rename(
+    cod_municipio = 1,
+    municipio     = 2,   # municipio_fato
+    data          = 3,   # data_fato
+    mes           = 4,
+    ano           = 5,
+    risp          = 6,
+    rmbh          = 7,
+    tipo          = 8,   # tentado_consumado
+    vitimas       = 9    # qtde_vitimas
+  ) |>
+  
+  # garantir tipo correto para data
+  mutate(
+    data      = as_date(data),
+    mes_label = factor(mes, levels = 1:12,
+                       labels = c("Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                                  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro")),    municipio = str_to_title(municipio),   # "UBERABA" → "Uberaba"
+    risp      = str_trim(risp)
+  )
+
+# ══════════════════════════════════════════════════════════════
+# ── 4. TABELAS-RESUMO (bases para gráficos) ──────────────────
+# ══════════════════════════════════════════════════════════════
+
+# 4A ── Vítimas por mês
+por_mes3 <- df3 |>
+  group_by(mes, mes_label) |>
+  summarise(total_vitimas = sum(vitimas), ocorrencias = n(), .groups = "drop") |>
+  arrange(mes)
+
+# 4B ── Vítimas por região (RISP)
+por_risp3 <- df3 |>
+  group_by(risp) |>
+  summarise(total_vitimas = sum(vitimas), ocorrencias = n(), .groups = "drop") |>
+  arrange(desc(total_vitimas))
+
+# 4C ── Tentado vs Consumado por mês
+por_tipo_mes3 <- df3 |>
+  group_by(mes, mes_label, tipo) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop")
+
+# 4D ── Top 10 municípios
+top_municipios3 <- df3 |>
+  group_by(municipio) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop") |>
+  slice_max(total_vitimas, n = 10)
+
+# 4E ── Por área (BH / RMBH / Interior)
+por_area3 <- df3 |>
+  group_by(rmbh) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop")
+
+# ============================================================
+# ANÁLISE DE DADOS: FEMINICÍDIO EM MINAS GERAIS - 2022
+# ============================================================
+
+# ── 2. LEITURA E LIMPEZA ────────────────────────────────────
+df4 <- read_csv2("feminicidio_2022.csv",
+                 locale = locale(encoding = "UTF-8"),
+                 name_repair = "universal") |>  # remove BOM e caracteres especiais dos nomes
+  
+  # renomear pelo índice (posição) para evitar erro com BOM mark na col 1
+  rename(
+    cod_municipio = 1,
+    municipio     = 2,   # municipio_fato
+    data          = 3,   # data_fato
+    mes           = 4,
+    ano           = 5,
+    risp          = 6,
+    rmbh          = 7,
+    tipo          = 8,   # tentado_consumado
+    vitimas       = 9    # qtde_vitimas
+  ) |>
+  
+  # garantir tipo correto para data
+  mutate(
+    data      = as_date(data),
+    mes_label = factor(mes, levels = 1:12,
+                       labels = c("Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                                  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro")),    municipio = str_to_title(municipio),   # "UBERABA" → "Uberaba"
+    risp      = str_trim(risp)
+  )
+
+# ══════════════════════════════════════════════════════════════
+# ── 4. TABELAS-RESUMO (bases para gráficos) ──────────────────
+# ══════════════════════════════════════════════════════════════
+
+# 4A ── Vítimas por mês
+por_mes4 <- df4 |>
+  group_by(mes, mes_label) |>
+  summarise(total_vitimas = sum(vitimas), ocorrencias = n(), .groups = "drop") |>
+  arrange(mes)
+
+# 4B ── Vítimas por região (RISP)
+por_risp4 <- df4 |>
+  group_by(risp) |>
+  summarise(total_vitimas = sum(vitimas), ocorrencias = n(), .groups = "drop") |>
+  arrange(desc(total_vitimas))
+
+# 4C ── Tentado vs Consumado por mês
+por_tipo_mes4 <- df4 |>
+  group_by(mes, mes_label, tipo) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop")
+
+# 4D ── Top 10 municípios
+top_municipios4 <- df4 |>
+  group_by(municipio) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop") |>
+  slice_max(total_vitimas, n = 10)
+
+# 4E ── Por área (BH / RMBH / Interior)
+por_area4 <- df4 |>
+  group_by(rmbh) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop")
+
+# ============================================================
+# ANÁLISE DE DADOS: FEMINICÍDIO EM MINAS GERAIS – 2018 A 2023
+# ============================================================
+# ── 2. LEITURA E COMBINAÇÃO DOS ARQUIVOS ────────────────────
+# Liste apenas os arquivos CSV na pasta de trabalho
+arquivos <- list.files(pattern = "feminicidio_\\d{4}\\.csv", full.names = TRUE)
+
+# Lê e empilha todos num único data frame
+df <- map(arquivos, \(f) read_csv2(f,
+                                   locale = locale(encoding = "UTF-8"),
+                                   name_repair = "universal")) |>
+  list_rbind()
+
+# ── 3. LIMPEZA ──────────────────────────────────────────────
+df <- df |>
+  rename(
+    cod_municipio = 1,
+    municipio     = 2,
+    data          = 3,
+    mes           = 4,
+    ano           = 5,
+    risp          = 6,
+    rmbh          = 7,
+    tipo          = 8,
+    vitimas       = 9
+  ) |>
+  mutate(
+    data      = as_date(data),
+    mes_label = factor(mes, levels = 1:12,
+                       labels = c("Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                                  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro")),
+    municipio = str_to_title(municipio),
+    risp      = str_trim(risp),
+    cidade    = str_extract(risp, "(?<=- ).+")   # só o nome da cidade da RISP
+  )
+
+populacao_area <- tribble(
+  ~rmbh,               ~ano,  ~populacao,
+  "1) Belo Horizonte", 2018,  2375151,
+  "1) Belo Horizonte", 2019,  2372124,
+  "1) Belo Horizonte", 2020,  2360284,
+  "1) Belo Horizonte", 2021,  2337922,
+  "1) Belo Horizonte", 2022,  2315560,
+  "1) Belo Horizonte", 2023,  2350564,
+  "2) RMBH (sem BH)",  2018,  2664676,
+  "2) RMBH (sem BH)",  2019,  2695533,
+  "2) RMBH (sem BH)",  2020,  2730000,
+  "2) RMBH (sem BH)",  2021,  2771361,
+  "2) RMBH (sem BH)",  2022,  2812722,
+  "2) RMBH (sem BH)",  2023,  2850000,
+  "3) Interior de MG", 2018,  15077572,
+  "3) Interior de MG", 2019,  15164332,
+  "3) Interior de MG", 2020,  15249716,
+  "3) Interior de MG", 2021,  15330706,
+  "3) Interior de MG", 2022,  15411707,
+  "3) Interior de MG", 2023,  15479877
+)
+# ══════════════════════════════════════════════════════════════
+# ── 4. TABELAS-RESUMO ─────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+
+# 4A ── Vítimas por ano (série histórica)
+por_ano <- df |>
+  group_by(ano) |>
+  summarise(total_vitimas = sum(vitimas), ocorrencias = n(), .groups = "drop")
+
+# 4B ── Vítimas por ano e mês (heatmap)
+por_ano_mes <- df |>
+  group_by(ano, mes, mes_label) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop")
+
+# 4C ── Tentado vs Consumado por ano
+por_tipo_ano <- df |>
+  group_by(ano, tipo) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop")
+
+# 4D ── Vítimas por RISP (todos os anos)
+por_risp5 <- df |>
+  group_by(cidade) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop") |>
+  arrange(desc(total_vitimas))
+
+# 4E ── Top 10 municípios (todos os anos)
+top_municipios5 <- df |>
+  group_by(municipio) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop") |>
+  slice_max(total_vitimas, n = 10)
+
+# 4F ── Por área por ano (taxa por 100 mil hab.)
+por_area_ano <- df |>
+  group_by(ano, rmbh) |>
+  summarise(total_vitimas = sum(vitimas), .groups = "drop") |>
+  left_join(populacao_area, by = c("ano", "rmbh")) |>
+  mutate(taxa_100k = (total_vitimas / populacao) * 100000)
+
+```
+
+# 2018 {orientation="columns"}
+
+## Colunm {.tabset}
+
+```{r}
+#| title: Vítimas por mês
+# GRÁFICO 1 ── Vítimas por mês (linha)
+ggplot(por_mes, aes(x = mes, y = total_vitimas)) +
+  geom_line(color = "#c0392b", linewidth = 1.2) +
+  geom_point(color = "#c0392b", size = 3) +
+  scale_x_continuous(breaks = 1:12, labels = por_mes$mes_label) +
+  labs(title = "Vítimas de Feminicídio por Mês – MG 2018",
+       x = NULL, y = "Nº de Vítimas") +
+  tema
+```
+
+```{r}
+#| title: Tentado vs consumado p/mês
+# GRÁFICO 2 ── Tentado vs Consumado por mês (barras empilhadas)
+ggplot(por_tipo_mes, aes(x = mes, y = total_vitimas, fill = tipo)) +
+  geom_col(position = "stack") +
+  scale_x_continuous(breaks = 1:12, labels = por_mes$mes_label) +
+  scale_fill_manual(values = c("CONSUMADO" = "#c0392b", "TENTADO" = "#e67e22")) +
+  labs(title = "Feminicídios Tentados e Consumados por Mês – MG 2018",
+       x = NULL, y = "Nº de Vítimas", fill = NULL) +
+  tema
+```
+
+```{r}
+#| title: Top 10 municipios 
+# GRÁFICO 3 ── Top 10 municípios (barras horizontais)
+ggplot(top_municipios, aes(x = reorder(municipio, total_vitimas), y = total_vitimas)) +
+  geom_col(fill = "#8e44ad") +
+  geom_text(aes(label = total_vitimas), hjust = -0.2, size = 3.5) +
+  coord_flip() +
+  labs(title = "Top 10 Municípios com Mais Vítimas – MG 2018",
+       x = NULL, y = "Nº de Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+```
+
+```{r}
+#| title: Vítimas por RISP
+# GRÁFICO 4 ── Vítimas por RISP (barras verticais)
+por_risp |>
+  mutate(cidade = str_extract(risp, "(?<=- ).+")) |>
+  ggplot(aes(x = reorder(cidade, -total_vitimas), y = total_vitimas)) +
+  geom_col(fill = "#2980b9") +
+  geom_text(aes(label = total_vitimas), vjust = -0.4, size = 3.5) +
+  labs(title = "Vítimas por Região de Segurança Pública – MG 2018",
+       x = NULL, y = "Nº de Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title         = element_text(face = "bold"),
+    axis.text.x        = element_text(angle = 45, hjust = 1),
+    axis.text.y        = element_blank(),
+    panel.grid.major.y = element_blank()
+  )
+```
+
+```{r}
+#| title: Vítimas por área 
+# GRÁFICO 5 ── Vítimas por área (pizza simples)
+ggplot(por_area, aes(x = "", y = total_vitimas, fill = rmbh)) +
+  geom_col(width = 1) +
+  coord_polar("y") +
+  geom_text(aes(label = paste0(rmbh, "\n",round(total_vitimas / sum(total_vitimas) * 100, 1), "%")),
+            position = position_stack(vjust = 0.5), size = 3.5) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Distribuição de Vítimas por Área – MG 2018", fill = NULL) +
+  theme_void(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+```
+
+# 2019 {orientation="columns"}
+
+## Colunm {.tabset}
+
+```{r}
+#| title: Vitimas por mês
+# GRÁFICO 1 ── Vítimas por mês (linha)
+ggplot(por_mes1, aes(x = mes, y = total_vitimas)) +
+  geom_line(color = "#c0392b", linewidth = 1.2) +
+  geom_point(color = "#c0392b", size = 3) +
+  scale_x_continuous(breaks = 1:12, labels = por_mes1$mes_label) +
+  labs(title = "Vítimas de Feminicídio por Mês – MG 2019",
+       x = NULL, y = "Nº de Vítimas") +
+  tema
+```
+
+```{r}
+#| title: Tentado vs consumado p/mês
+# GRÁFICO 2 ── Tentado vs Consumado por mês (barras empilhadas)
+ggplot(por_tipo_mes1, aes(x = mes, y = total_vitimas, fill = tipo)) +
+  geom_col(position = "stack") +
+  scale_x_continuous(breaks = 1:12, labels = por_mes1$mes_label) +
+  scale_fill_manual(values = c("CONSUMADO" = "#c0392b", "TENTADO" = "#e67e22")) +
+  labs(title = "Feminicídios Tentados e Consumados por Mês – MG 2019",
+       x = NULL, y = "Nº de Vítimas", fill = NULL) +
+  tema
+```
+
+```{r}
+#| title: Top 10 municipios
+# GRÁFICO 3 ── Top 10 municípios (barras horizontais)
+ggplot(top_municipios1, aes(x = reorder(municipio, total_vitimas), y = total_vitimas)) +
+  geom_col(fill = "#8e44ad") +
+  geom_text(aes(label = total_vitimas), hjust = -0.2, size = 3.5) +
+  coord_flip() +
+  labs(title = "Top 10 Municípios com Mais Vítimas – MG 2019",
+       x = NULL, y = "Nº de Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+
+```
+
+```{r}
+#| title: Vitimas por RISP
+# GRÁFICO 4 ── Vítimas por RISP (barras verticais)
+por_risp1 |>
+  mutate(cidade = str_extract(risp, "(?<=- ).+")) |>
+  ggplot(aes(x = reorder(cidade, -total_vitimas), y = total_vitimas)) +
+  geom_col(fill = "#2980b9") +
+  geom_text(aes(label = total_vitimas), vjust = -0.4, size = 3.5) +
+  labs(title = "Vítimas por Região de Segurança Pública – MG 2019",
+       x = NULL, y = "Nº de Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title         = element_text(face = "bold"),
+    axis.text.x        = element_text(angle = 45, hjust = 1),
+    axis.text.y        = element_blank(),
+    panel.grid.major.y = element_blank()
+  )
+```
+
+```{r}
+#| title: Vítimas por area
+# GRÁFICO 5 ── Vítimas por área (pizza simples)
+ggplot(por_area1, aes(x = "", y = total_vitimas, fill = rmbh)) +
+  geom_col(width = 1) +
+  coord_polar("y") +
+  geom_text(aes(label = paste0(rmbh, "\n",round(total_vitimas / sum(total_vitimas) * 100, 1), "%")),
+            position = position_stack(vjust = 0.5), size = 3.5) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Distribuição de Vítimas por Área – MG 2019", fill = NULL) +
+  theme_void(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+
+```
+
+# 2020 {orientation="columns"}
+
+## Colunm {.tabset}
+
+```{r}
+#| title: Vitimas por mês
+# GRÁFICO 1 ── Vítimas por mês (linha)
+ggplot(por_mes2, aes(x = mes, y = total_vitimas)) +
+  geom_line(color = "#c0392b", linewidth = 1.2) +
+  geom_point(color = "#c0392b", size = 3) +
+  scale_x_continuous(breaks = 1:12, labels = por_mes2$mes_label) +
+  labs(title = "Vítimas de Feminicídio por Mês – MG 2020",
+       x = NULL, y = "Nº de Vítimas") +
+  tema
+```
+
+
+```{r}
+#| title: Tentado vs consumado p/mês
+# GRÁFICO 2 ── Tentado vs Consumado por mês (barras empilhadas)
+ggplot(por_tipo_mes2, aes(x = mes, y = total_vitimas, fill = tipo)) +
+  geom_col(position = "stack") +
+  scale_x_continuous(breaks = 1:12, labels = por_mes2$mes_label) +
+  scale_fill_manual(values = c("CONSUMADO" = "#c0392b", "TENTADO" = "#e67e22")) +
+  labs(title = "Feminicídios Tentados e Consumados por Mês – MG 2020",
+       x = NULL, y = "Nº de Vítimas", fill = NULL) +
+  tema
+```
+
+
+```{r}
+#| title: Top 10 municipios
+# GRÁFICO 3 ── Top 10 municípios (barras horizontais)
+ggplot(top_municipios2, aes(x = reorder(municipio, total_vitimas), y = total_vitimas)) +
+  geom_col(fill = "#8e44ad") +
+  geom_text(aes(label = total_vitimas), hjust = -0.2, size = 3.5) +
+  coord_flip() +
+  labs(title = "Top 10 Municípios com Mais Vítimas – MG 2020",
+       x = NULL, y = "Nº de Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+```
+
+
+```{r}
+#| title: Vitimas por RISP
+# GRÁFICO 4 ── Vítimas por RISP (barras verticais)
+por_risp2 |>
+  mutate(cidade = str_extract(risp, "(?<=- ).+")) |>
+  ggplot(aes(x = reorder(cidade, -total_vitimas), y = total_vitimas)) +
+  geom_col(fill = "#2980b9") +
+  geom_text(aes(label = total_vitimas), vjust = -0.4, size = 3.5) +
+  labs(title = "Vítimas por Região de Segurança Pública – MG 2020",
+       x = NULL, y = "Nº de Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title         = element_text(face = "bold"),
+    axis.text.x        = element_text(angle = 45, hjust = 1),
+    axis.text.y        = element_blank(),
+    panel.grid.major.y = element_blank()
+  )
+```
+
+
+```{r}
+#| title: Vítimas por area
+# GRÁFICO 5 ── Vítimas por área (pizza simples)
+ggplot(por_area2, aes(x = "", y = total_vitimas, fill = rmbh)) +
+  geom_col(width = 1) +
+  coord_polar("y") +
+  geom_text(aes(label = paste0(rmbh, "\n",round(total_vitimas / sum(total_vitimas) * 100, 1), "%")),
+            position = position_stack(vjust = 0.5), size = 3.5) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Distribuição de Vítimas por Área – MG 2020", fill = NULL) +
+  theme_void(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+```
+
+# 2021 {orientation="columns"}
+
+## Colunm {.tabset}
+
+```{r}
+#| title: Vitimas por mês
+# GRÁFICO 1 ── Vítimas por mês (linha)
+ggplot(por_mes3, aes(x = mes, y = total_vitimas)) +
+  geom_line(color = "#c0392b", linewidth = 1.2) +
+  geom_point(color = "#c0392b", size = 3) +
+  scale_x_continuous(breaks = 1:12, labels = por_mes3$mes_label) +
+  labs(title = "Vítimas de Feminicídio por Mês – MG 2021",
+       x = NULL, y = "Nº de Vítimas") +
+  tema
+```
+
+
+```{r}
+#| title: Tentado vs consumado p/mês
+# GRÁFICO 2 ── Tentado vs Consumado por mês (barras empilhadas)
+ggplot(por_tipo_mes3, aes(x = mes, y = total_vitimas, fill = tipo)) +
+  geom_col(position = "stack") +
+  scale_x_continuous(breaks = 1:12, labels = por_mes3$mes_label) +
+  scale_fill_manual(values = c("CONSUMADO" = "#c0392b", "TENTADO" = "#e67e22")) +
+  labs(title = "Feminicídios Tentados e Consumados por Mês – MG 2021",
+       x = NULL, y = "Nº de Vítimas", fill = NULL) +
+  tema
+```
+
+
+```{r}
+#| title: Top 10 municipios
+# GRÁFICO 3 ── Top 10 municípios (barras horizontais)
+ggplot(top_municipios3, aes(x = reorder(municipio, total_vitimas), y = total_vitimas)) +
+  geom_col(fill = "#8e44ad") +
+  geom_text(aes(label = total_vitimas), hjust = -0.2, size = 3.5) +
+  coord_flip() +
+  labs(title = "Top 10 Municípios com Mais Vítimas – MG 2021",
+       x = NULL, y = "Nº de Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+```
+
+
+```{r}
+#| title: Vitimas por RISP
+# GRÁFICO 4 ── Vítimas por RISP (barras verticais)
+por_risp3 |>
+  mutate(cidade = str_extract(risp, "(?<=- ).+")) |>
+  ggplot(aes(x = reorder(cidade, -total_vitimas), y = total_vitimas)) +
+  geom_col(fill = "#2980b9") +
+  geom_text(aes(label = total_vitimas), vjust = -0.4, size = 3.5) +
+  labs(title = "Vítimas por Região de Segurança Pública – MG 2021",
+       x = NULL, y = "Nº de Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title         = element_text(face = "bold"),
+    axis.text.x        = element_text(angle = 45, hjust = 1),
+    axis.text.y        = element_blank(),
+    panel.grid.major.y = element_blank()
+  )
+```
+
+```{r}
+#| title: Vítimas por area
+# GRÁFICO 5 ── Vítimas por área (pizza simples)
+ggplot(por_area3, aes(x = "", y = total_vitimas, fill = rmbh)) +
+  geom_col(width = 1) +
+  coord_polar("y") +
+  geom_text(aes(label = paste0(rmbh, "\n",round(total_vitimas / sum(total_vitimas) * 100, 1), "%")),
+            position = position_stack(vjust = 0.5), size = 3.5) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Distribuição de Vítimas por Área – MG 2021", fill = NULL) +
+  theme_void(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+```
+
+# 2022 {orientation="columns"}
+
+## Colunm {.tabset}
+
+```{r}
+#| title: Vítimas por mês
+# GRÁFICO 1 ── Vítimas por mês (linha)
+ggplot(por_mes4, aes(x = mes, y = total_vitimas)) +
+  geom_line(color = "#c0392b", linewidth = 1.2) +
+  geom_point(color = "#c0392b", size = 3) +
+  scale_x_continuous(breaks = 1:12, labels = por_mes4$mes_label) +
+  labs(title = "Vítimas de Feminicídio por Mês – MG 2022",
+       x = NULL, y = "Nº de Vítimas") +
+  tema
+```
+
+
+```{r}
+#| title: Tentado vs consumado p/mês
+# GRÁFICO 2 ── Tentado vs Consumado por mês (barras empilhadas)
+ggplot(por_tipo_mes4, aes(x = mes, y = total_vitimas, fill = tipo)) +
+  geom_col(position = "stack") +
+  scale_x_continuous(breaks = 1:12, labels = por_mes4$mes_label) +
+  scale_fill_manual(values = c("CONSUMADO" = "#c0392b", "TENTADO" = "#e67e22")) +
+  labs(title = "Feminicídios Tentados e Consumados por Mês – MG 2022",
+       x = NULL, y = "Nº de Vítimas", fill = NULL) +
+  tema
+```
+
+
+```{r}
+#| title: Top 10 municípios
+# GRÁFICO 3 ── Top 10 municípios (barras horizontais)
+ggplot(top_municipios4, aes(x = reorder(municipio, total_vitimas), y = total_vitimas)) +
+  geom_col(fill = "#8e44ad") +
+  geom_text(aes(label = total_vitimas), hjust = -0.2, size = 3.5) +
+  coord_flip() +
+  labs(title = "Top 10 Municípios com Mais Vítimas – MG 2022",
+       x = NULL, y = "Nº de Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+```
+
+
+```{r}
+#| title: Vítimas por RISP
+# GRÁFICO 4 ── Vítimas por RISP (barras verticais)
+por_risp4 |>
+  mutate(cidade = str_extract(risp, "(?<=- ).+")) |>
+  ggplot(aes(x = reorder(cidade, -total_vitimas), y = total_vitimas)) +
+  geom_col(fill = "#2980b9") +
+  geom_text(aes(label = total_vitimas), vjust = -0.4, size = 3.5) +
+  labs(title = "Vítimas por Região de Segurança Pública – MG 2022",
+       x = NULL, y = "Nº de Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title         = element_text(face = "bold"),
+    axis.text.x        = element_text(angle = 45, hjust = 1),
+    axis.text.y        = element_blank(),
+    panel.grid.major.y = element_blank()
+  )
+```
+
+
+```{r}
+#| title: Vítimas por área
+# GRÁFICO 5 ── Vítimas por área (pizza simples)
+ggplot(por_area, aes(x = "", y = total_vitimas, fill = rmbh)) +
+  geom_col(width = 1) +
+  coord_polar("y") +
+  geom_text(aes(label = paste0(rmbh, "\n",round(total_vitimas / sum(total_vitimas) * 100, 1), "%")),
+            position = position_stack(vjust = 0.5), size = 3.5) +
+  scale_fill_brewer(palette = "Set1") +
+  labs(title = "Distribuição de Vítimas por Área – MG 2022", fill = NULL) +
+  theme_void(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+```
+
+
+
+# Todos os anos juntos {orientation="columns"}
+
+## Column {.tabset}
+```{r}
+#| title: Série histórica anual 
+# GRÁFICO 1 ── Série histórica anual (linha)
+ggplot(por_ano, aes(x = ano, y = total_vitimas)) +
+  geom_line(color = "#c0392b", linewidth = 1.2) +
+  geom_point(color = "#c0392b", size = 4) +
+  geom_text(aes(label = total_vitimas), vjust = -1, size = 3.8) +
+  scale_x_continuous(breaks = unique(df$ano)) +
+  labs(title = "Evolução Anual de Vítimas de Feminicídio – MG 2018–2023",
+       x = NULL, y = "Nº de Vítimas") +
+  tema
+```
+
+```{r} 
+#| title: "Heatmap: mês x ano"
+# GRÁFICO 2 ── Heatmap: mês x ano
+ggplot(por_ano_mes, aes(x = factor(ano), y = fct_rev(mes_label), fill = total_vitimas)) +
+  geom_tile(color = "white", linewidth = 0.5) +
+  geom_text(aes(label = total_vitimas), size = 3) +
+  scale_fill_gradient(low = "#fde8e8", high = "#c0392b") +
+  labs(title = "Vítimas por Mês e Ano – MG 2018–2023",
+       x = NULL, y = NULL, fill = "Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+```
+
+```{r}
+#| title: Tentado vs Consumado
+# GRÁFICO 3 ── Tentado vs Consumado por ano (barras empilhadas)
+ggplot(por_tipo_ano, aes(x = factor(ano), y = total_vitimas, fill = tipo)) +
+  geom_col(position = "stack") +
+  geom_text(aes(label = total_vitimas), position = position_stack(vjust = 0.5), size = 3.5) +
+  scale_fill_manual(values = c("CONSUMADO" = "#c0392b", "TENTADO" = "#e67e22")) +
+  labs(title = "Feminicídios Tentados e Consumados por Ano – MG 2018–2023",
+       x = NULL, y = "Nº de Vítimas", fill = NULL) +
+  tema
+```
+
+```{r}
+#| title: Vítimas por RISP
+# GRÁFICO 4 ── Vítimas por RISP – todos os anos
+ggplot(por_risp5, aes(x = reorder(cidade, -total_vitimas), y = total_vitimas)) +
+  geom_col(fill = "#2980b9") +
+  geom_text(aes(label = total_vitimas), vjust = -0.4, size = 3.5) +
+  labs(title = "Vítimas por Região de Segurança Pública – MG 2018–2023",
+       x = NULL, y = "Nº de Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title         = element_text(face = "bold"),
+    axis.text.x        = element_text(angle = 45, hjust = 1),
+    axis.text.y        = element_blank(),
+    panel.grid.major.y = element_blank()
+  )
+```
+
+```{r}
+#| title: Top 10 municípios 
+# GRÁFICO 5 ── Top 10 municípios (barras horizontais)
+ggplot(top_municipios5, aes(x = reorder(municipio, total_vitimas), y = total_vitimas)) +
+  geom_col(fill = "#8e44ad") +
+  geom_text(aes(label = total_vitimas), hjust = -0.2, size = 3.5) +
+  coord_flip() +
+  labs(title = "Top 10 Municípios com Mais Vítimas – MG 2018–2023",
+       x = NULL, y = "Nº de Vítimas") +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+```
+
+```{r}
+#| title: Taxa por 100 mil hab. por área e ano
+# GRÁFICO 6 ── Taxa por 100 mil hab. por área e ano
+ggplot(por_area_ano, aes(x = ano, y = taxa_100k, color = rmbh, group = rmbh)) +
+  geom_line(linewidth = 1.1) +
+  geom_point(size = 3) +
+  scale_x_continuous(breaks = unique(df$ano)) +
+  scale_color_brewer(palette = "Set1") +
+  labs(title = "Taxa de Feminicídio por 100 mil Habitantes por Área – MG 2018–2023",
+       x = NULL, y = "Vítimas por 100 mil hab.", color = NULL) +
+  tema
+```
